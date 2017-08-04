@@ -74,7 +74,7 @@ const createEmailString = table => {
 const sendEmail = emailString => {
   const mailOptions = {
     from: '"The Dean\'s Office" <tyler@bvaccel.com>', // sender address
-    to: 'tyler@bvaccel.com',
+    to: 'delivery@bvaccel.com',
     cc: 'tyler@bvaccel.com',
     subject: `🎒 BVA Weekly Report Card for ${moment().format('MMMM Do, YYYY')}`,
     html: emailString
