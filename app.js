@@ -52,18 +52,25 @@ const filterBigMovers = data => {
 };
 
 const createChangeTable = data => {
+  let tableBody;
   const tableStyle = 'style="border-collapse: collapse; border: solid #e0e0dc; border-width: 1px 0 0 1px; width: 100%;"'
   const headCellStyle = 'style="border: solid #e0e0dc; border-width: 0 1px 1px 0; padding: 6px 8px; text-align: left;background: rgba(212,221,228,.5);"'
   const cellStyle = 'style="border: solid #e0e0dc; border-width: 0 1px 1px 0; padding: 6px 8px; text-align: left;"'
   const tableHead = `<thead><tr><th ${headCellStyle}>Repo</th><th ${headCellStyle}>Then</th><th ${headCellStyle}>Now</th><th ${headCellStyle}>Change</th></tr></thead>`;
-  const tableBody = data.reduce((string, item) => {
-    const direction = ((item.gpa.now - item.gpa.then) > 0) ? '⬆️' : '⬇️';
-    const name = `<td ${cellStyle}>${item.name}</td>`;
-    const then = `<td ${cellStyle}>${item.gpa.then}</td>`;
-    const now = `<td ${cellStyle}>${item.gpa.now}</td>`;
-    const change = `<td ${cellStyle}>${direction} ${Math.abs((item.gpa.now - item.gpa.then).toFixed(3))}</td>`;
-    return `${string}<tr>${name}${then}${now}${change}</tr>`;
-  }, '');
+
+  if (data.length > 0) {
+    tableBody = data.reduce((string, item) => {
+      const direction = ((item.gpa.now - item.gpa.then) > 0) ? '⬆️' : '⬇️';
+      const name = `<td ${cellStyle}>${item.name}</td>`;
+      const then = `<td ${cellStyle}>${item.gpa.then}</td>`;
+      const now = `<td ${cellStyle}>${item.gpa.now}</td>`;
+      const change = `<td ${cellStyle}>${direction} ${Math.abs((item.gpa.now - item.gpa.then).toFixed(3))}</td>`;
+      return `${string}<tr>${name}${then}${now}${change}</tr>`;
+    }, '');
+  } else {
+    tableBody = `<tr><td>Move along...nothing to see here.</td><td></td><td></td><td></td></tr>`;
+  }
+
   return `<table ${tableStyle}>${tableHead}<tbody>${tableBody}</tbody></table>`;
 };
 
