@@ -82,7 +82,7 @@ const sendEmail = emailString => {
   const mailOptions = {
     from: '"The Dean\'s Office" <tyler@bvaccel.com>', // sender address
     to: 'delivery@bvaccel.com',
-    cc: 'tyler@bvaccel.com',
+    cc: 'tyler@bvaccel.com, annie@bvaccel.com',
     subject: `🎒 BVA Weekly Report Card for ${moment().format('MMMM Do, YYYY')}`,
     html: emailString
   };
