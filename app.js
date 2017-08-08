@@ -12,12 +12,12 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-const now = moment().format('YYYY-MM-DD');
-const then = moment().subtract(1, 'week').format('YYYY-MM-DD');
+const reportCardOptions = {
+  threshold: 0.15,
+  weeks: 2
+};
 
-const bigMoverThreshold = 0.15;
-
-const options = {
+const requestOptions = {
   json: true,
   headers: {
     'Accept': 'application/vnd.api+json',
@@ -25,10 +25,14 @@ const options = {
   }
 };
 
+const now = moment().format('YYYY-MM-DD');
+const then = moment().subtract(reportCardOptions.weeks, 'week').format('YYYY-MM-DD');
+
 const getData = () => {
+
   const requests = repos.map(repo => {
     const url = `https://api.codeclimate.com/v1/repos/${repo.id}/metrics/gpa?filter[from]=${then}&filter[to]=${now}`;
-    return request(url, options).then(response => {
+    return request(url, requestOptions).then(response => {
       const then = response.data.attributes.points[0].value;
       const now = response.data.attributes.points[1].value;
       return {
@@ -48,7 +52,7 @@ const filterNulls = data => {
 };
 
 const filterBigMovers = data => {
-  return data.filter(item => Math.abs(item.gpa.then - item.gpa.now) > bigMoverThreshold);
+  return data.filter(item => Math.abs(item.gpa.then - item.gpa.now) > reportCardOptions.threshold);
 };
 
 const createChangeTable = data => {
@@ -56,7 +60,7 @@ const createChangeTable = data => {
   const tableStyle = 'style="border-collapse: collapse; border: solid #e0e0dc; border-width: 1px 0 0 1px; width: 100%;"'
   const headCellStyle = 'style="border: solid #e0e0dc; border-width: 0 1px 1px 0; padding: 6px 8px; text-align: left;background: rgba(212,221,228,.5);"'
   const cellStyle = 'style="border: solid #e0e0dc; border-width: 0 1px 1px 0; padding: 6px 8px; text-align: left;"'
-  const tableHead = `<thead><tr><th ${headCellStyle}>Repo</th><th ${headCellStyle}>Then</th><th ${headCellStyle}>Now</th><th ${headCellStyle}>Change</th></tr></thead>`;
+  const tableHead = `<thead><tr><th ${headCellStyle}>Repo</th><th ${headCellStyle}>Then (${then})</th><th ${headCellStyle}>Now (${now})</th><th ${headCellStyle}>Change</th></tr></thead>`;
 
   if (data.length > 0) {
     tableBody = data.reduce((string, item) => {
@@ -75,7 +79,7 @@ const createChangeTable = data => {
 };
 
 const createEmailString = table => {
-  return `<div style="width: 600px; margin: 0 auto;"><h2 style="font-size: 34px;">Howdy!</h2>Just what you were hoping for! Another email! In this email we'll take a look at recent changes in our project's CodeClimate GPAs and call out the ones with big movements. I bet you thought you were done getting grades and report cards after you finished school! Well, think again!<br><br>A few notes: The CodeClimate API is still in beta so it's unpredictable and undocumented. As such, I can't guarantee the accuracy of this email, but hopefully one day it grows into a <a href="https://www.youtube.com/watch?v=PDBBCuw_Rpc">delicate little flower.</a><br><br><h2 style="font-size: 34px;"><u>Movers and Shakers</u></h2>Here are the big changes from the last week:<br><br>${table}<br><br>---<br><br>Boy, wasn't that some good data?!?? Be on the lookout for this same email next week!<br><br>Until then, stay sexy and don't get murdered yall!</div>`;
+  return `<div style="width: 600px; margin: 0 auto;"><h2 style="font-size: 34px;">Howdy!</h2>Just what you were hoping for! Another email! In this email we'll take a look at recent changes in our project's CodeClimate GPAs and call out the ones with big movements. I bet you thought you were done getting grades and report cards after you finished school! Well, think again!<br><br>A few notes: The CodeClimate API is still in beta so it's liiiiiittle unpredictable and undocumented. As such, I can't guarantee the accuracy or consistency of this email, but hopefully one day it grows into a beautiful <a href="https://www.youtube.com/watch?v=PDBBCuw_Rpc">delicate little flower.</a><br><br><h2 style="font-size: 34px;"><u>Movers and Shakers</u></h2>Here are the big changes from the last week:<br><br>${table}<br><br>---<br><br>Boy, wasn't that some good data?!?? Be on the lookout for this same email next week!<br><br>Until then, stay sexy and don't get murdered yall!</div>`;
 };
 
 const sendEmail = emailString => {
