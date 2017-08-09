@@ -14,7 +14,8 @@ const transporter = nodemailer.createTransport({
 
 const reportCardOptions = {
   threshold: 0.15,
-  weeks: 2
+  unit: 'week',
+  amount: 1
 };
 
 const requestOptions = {
@@ -26,7 +27,7 @@ const requestOptions = {
 };
 
 const now = moment().format('YYYY-MM-DD');
-const then = moment().subtract(reportCardOptions.weeks, 'week').format('YYYY-MM-DD');
+const then = moment().subtract(reportCardOptions.amount, reportCardOptions.unit).format('YYYY-MM-DD');
 
 const getData = () => {
 
