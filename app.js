@@ -15,7 +15,7 @@ const transporter = nodemailer.createTransport({
 const reportCardOptions = {
   threshold: 0.15,
   unit: 'week',
-  amount: 1
+  amount: 2
 };
 
 const requestOptions = {
@@ -108,7 +108,10 @@ const doSomethign = function () {
       .then(filterBigMovers)
       .then(createChangeTable)
       .then(createEmailString)
-      .then(sendEmail);
+      .then(function (data) {
+        console.log(data);
+      })
+      // .then(sendEmail);
   } else {
     console.log('it\'s not Tuesday.');
   };
