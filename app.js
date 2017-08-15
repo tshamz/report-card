@@ -108,10 +108,7 @@ const doSomethign = function () {
       .then(filterBigMovers)
       .then(createChangeTable)
       .then(createEmailString)
-      .then(function (data) {
-        console.log(data);
-      })
-      // .then(sendEmail);
+      .then(sendEmail);
   } else {
     console.log('it\'s not Tuesday.');
   };
