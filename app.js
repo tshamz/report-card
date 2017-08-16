@@ -26,6 +26,12 @@ const requestOptions = {
   }
 };
 
+const styles = {
+  ul: 'style="font-size: 18px;font-family: Verdana,Geneva,sans-serif;line-height: 1.5;color: #4e4e4e;padding-left: 24px"',
+  h2: 'style="font-size: 34px;margin-bottom: 0;"',
+  p: 'style="font-size: 18px;font-family: Verdana,Geneva,sans-serif;line-height: 1.5;color: #4e4e4e;"'
+};
+
 const now = moment().format('YYYY-MM-DD');
 const then = moment().subtract(reportCardOptions.amount, reportCardOptions.unit).format('YYYY-MM-DD');
 
@@ -80,7 +86,16 @@ const createChangeTable = data => {
 };
 
 const createEmailString = table => {
-  return `<div style="width: 600px; margin: 0 auto;"><h2 style="font-size: 34px;">Howdy!</h2>Just what you were hoping for! Another email! In this email we'll take a look at recent changes in our project's CodeClimate GPAs and call out the ones with big movements. I bet you thought you were done getting grades and report cards! Well, think again!<br><br><em>A few notes: The CodeClimate API is still in beta so it's liiiiiittle unpredictable and undocumented. As such, I can't guarantee the accuracy or consistency of this email, but hopefully one day it grows into a beautiful <a href="https://youtu.be/PDBBCuw_Rpc">delicate little flower.</a></em><br><h2 style="font-size: 34px;"><u>Movers and Shakers</u></h2>Here are the big changes between ${then} and ${now}:<br><br>${table}<br><br>---<br><br>Boy, wasn't that some good data?!?? Be on the lookout for this same email next week!<br><br>Until then, stay sexy and don't get murdered yall!</div>`;
+  return `<div style="width: 500px; margin: 0 auto;">
+  <p ${styles.p}><strong>Just what you were hoping for! Another email!</strong> In this email we'll take a look at recent changes in our project's CodeClimate GPAs and call out the ones with big movements. I bet you thought you were done getting grades and report cards! Well, think again!</p>
+  <p ${styles.p}><em>A few notes: The CodeClimate API is still in beta so it's liiiiiittle unpredictable and undocumented. As such, I can't guarantee the accuracy or consistency of this email, but hopefully one day it grows into a beautiful <a href="https://youtu.be/PDBBCuw_Rpc">delicate little flower.</a></em></p>
+  <h2 ${styles.h2}>📈 Movers and Shakers</h2>
+  <hr>
+  <p ${styles.p}>Here are the big changes between ${then} and ${now}:</p>
+  ${table}
+  <p ${styles.p}>Boy, wasn't that some good data?!?? Be on the lookout for this same email next week!<br><br>Until then, stay sexy and don't get murdered yall!</p>
+  <p ${styles.p}>- <a href="https://github.com/tshamz">@tshamz</a></p>
+</div>`;
 };
 
 const sendEmail = emailString => {
