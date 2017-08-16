@@ -65,7 +65,7 @@ const createChangeTable = data => {
 
   if (data.length > 0) {
     tableBody = data.reduce((string, item) => {
-      const direction = ((item.gpa.now - item.gpa.then) > 0) ? '✅' : '⛔️';
+      const direction = ((item.gpa.now - item.gpa.then) > 0) ? '➕' : '➖';
       const name = `<td ${cellStyle}>${item.name}</td>`;
       const then = `<td ${cellStyle}>${item.gpa.then}</td>`;
       const now = `<td ${cellStyle}>${item.gpa.now}</td>`;
