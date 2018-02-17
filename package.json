@@ -18,11 +18,11 @@
   "homepage": "https://github.com/BVAccel/report-card#readme",
   "dependencies": {
     "dotenv": "^4.0.0",
-    "http": "0.0.0",
     "moment": "^2.18.1",
     "node-fetch": "^1.7.1",
     "nodemailer": "^4.0.1",
-    "request": "^2.81.0",
-    "request-promise": "^4.2.1"
+  },
+  "engines": {
+    "node": ">=8.9.4"
   }
 }

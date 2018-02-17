@@ -1,58 +1,17 @@
-const dotenv = require('dotenv').config();
+const url = require('url');
 const moment = require('moment');
-const request = require('request-promise');
-const nodemailer = require('nodemailer');
+const fetch = require('node-fetch');
+
 const repos = require('./repos.js');
+const { transporter, tunings, requestHeaders: headers } = require('./config');
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: 'tyler@bvaccel.com',
-    pass: 'aiug8330'
-  }
-});
-
-const reportCardOptions = {
-  threshold: 0.15,
-  unit: 'week',
-  amount: 2
+const dates = {
+  now: moment().format('YYYY-MM-DD'),
+  then: moment().subtract(tunings.amount, tunings.unit).format('YYYY-MM-DD'),
+  pretty: moment().format('MMMM Do, YYYY')
 };
 
-const requestOptions = {
-  json: true,
-  headers: {
-    'Accept': 'application/vnd.api+json',
-    'Authorization': `Token token=${process.env.CODECLIMATE_TOKEN}`
-  }
-};
-
-const styles = {
-  ul: 'style="font-size: 18px;font-family: Verdana,Geneva,sans-serif;line-height: 1.5;color: #4e4e4e;padding-left: 24px"',
-  h2: 'style="font-size: 34px;margin-bottom: 0;"',
-  p: 'style="font-size: 18px;font-family: Verdana,Geneva,sans-serif;line-height: 1.5;color: #4e4e4e;"'
-};
-
-const now = moment().format('YYYY-MM-DD');
-const then = moment().subtract(reportCardOptions.amount, reportCardOptions.unit).format('YYYY-MM-DD');
-
-const getData = () => {
-
-  const requests = repos.map(repo => {
-    const url = `https://api.codeclimate.com/v1/repos/${repo.id}/metrics/gpa?filter[from]=${then}&filter[to]=${now}`;
-    return request(url, requestOptions).then(response => {
-      const then = response.data.attributes.points[0].value;
-      const now = response.data.attributes.points[1].value;
-      return {
-        name: repo.name,
-        gpa: {
-          then: (then === null) ? then : then.toFixed(3),
-          now: (now === null) ? now : now.toFixed(3)
-        }
-      }
-    });
-  });
-  return Promise.all(requests)
-};
+const API_BASE = 'https://api.codeclimate.com/v1';
 
 const filterNulls = data => {
   return data.filter(item => item.gpa.now !== null && item.gpa.then !== null);
@@ -62,72 +21,85 @@ const filterBigMovers = data => {
   return data.filter(item => Math.abs(item.gpa.then - item.gpa.now) > reportCardOptions.threshold);
 };
 
-const createChangeTable = data => {
-  let tableBody;
-  const tableStyle = 'style="border-collapse: collapse; border: solid #e0e0dc; border-width: 1px 0 0 1px; width: 100%;"'
-  const headCellStyle = 'style="border: solid #e0e0dc; border-width: 0 1px 1px 0; padding: 6px 8px; text-align: left;background: rgba(212,221,228,.5);"'
-  const cellStyle = 'style="border: solid #e0e0dc; border-width: 0 1px 1px 0; padding: 6px 8px; text-align: left;"'
-  const tableHead = `<thead><tr><th ${headCellStyle}>Repo</th><th ${headCellStyle}>Then</th><th ${headCellStyle}>Now</th><th ${headCellStyle}>Change</th></tr></thead>`;
-
-  if (data.length > 0) {
-    tableBody = data.reduce((string, item) => {
-      const direction = ((item.gpa.now - item.gpa.then) > 0) ? '➕' : '➖';
-      const name = `<td ${cellStyle}>${item.name}</td>`;
-      const then = `<td ${cellStyle}>${item.gpa.then}</td>`;
-      const now = `<td ${cellStyle}>${item.gpa.now}</td>`;
-      const change = `<td ${cellStyle}>${direction} ${Math.abs((item.gpa.now - item.gpa.then).toFixed(3))}</td>`;
-      return `${string}<tr>${name}${then}${now}${change}</tr>`;
-    }, '');
-  } else {
-    tableBody = `<tr><td>Move along...nothing to see here.</td><td></td><td></td><td></td></tr>`;
-  }
-
-  return `<table ${tableStyle}>${tableHead}<tbody>${tableBody}</tbody></table>`;
+const getOrgs = () => {
+  return fetch(`${API_BASE}/orgs`, { headers })
+    .then(response => response.json());
 };
 
-const createEmailString = table => {
-  return `<div style="width: 500px; margin: 0 auto;">
-  <p ${styles.p}><strong>Just what you were hoping for! Another email!</strong> In this email we'll take a look at recent changes in our project's CodeClimate GPAs and call out the ones with big movements. I bet you thought you were done getting grades and report cards! Well, think again!</p>
-  <p ${styles.p}><em>A few notes: The CodeClimate API is still in beta so it's liiiiiittle unpredictable and undocumented. As such, I can't guarantee the accuracy or consistency of this email, but hopefully one day it grows into a beautiful <a href="https://youtu.be/PDBBCuw_Rpc">delicate little flower.</a></em></p>
-  <h2 ${styles.h2}>📈 Movers and Shakers</h2>
-  <hr>
-  <p ${styles.p}>Here are the big changes between ${then} and ${now}:</p>
-  ${table}
-  <p ${styles.p}>Boy, wasn't that some good data?!?? Be on the lookout for this same email next week!<br><br>Until then, stay sexy and don't get murdered yall!</p>
-  <p ${styles.p}>- <a href="https://github.com/tshamz">@tshamz</a></p>
-</div>`;
+const getRepos = async id => {
+  return fetch(`${API_BASE}/orgs/${id}/repos?page[size]=100`, { headers })
+    .then(response => response.json());
 };
 
-const sendEmail = emailString => {
-  const mailOptions = {
-    from: '"The Dean\'s Office" <tyler@bvaccel.com>', // sender address
-    to: 'delivery@bvaccel.com',
-    cc: 'tyler@bvaccel.com, annie@bvaccel.com',
-    subject: `🎒 BVA Weekly Report Card™ for ${moment().format('MMMM Do, YYYY')}`,
-    html: emailString
-  };
-
-  transporter.sendMail(mailOptions, (error, info) => {
-    if (error) {
-      return console.log(error);
-    }
-    console.log('Message %s sent: %s', info.messageId, info.response);
+const getGpas = async repos => {
+  // const requests = repos.map(({ id, name }) => {
+  const requests = repos.map(({ id, attributes: { human_name: name }}) => {
+    console.log(id);
+    console.log(name);
+    const url = `${API_BASE}/repos/${id}/metrics/gpa?filter[from]=${dates.then}&filter[to]=${dates.now}`;
+    return fetch(url, { headers })
+      .then(response => response.json())
+      .then(response => {
+        console.log(name);
+        console.log(response);
+        const then = response.data.attributes.points[0].value;
+        const now = response.data.attributes.points[1].value;
+        return {
+          name,
+          gpa: {
+            then: (then === null) ? then : then.toFixed(3),
+            now: (now === null) ? now : now.toFixed(3)
+          }
+        }
+      });
   });
+  return await Promise.all(requests);
 };
 
-const doSomethign = function () {
-  if (moment().day() === 2) {
-    console.log('it\'s Tuesday!');
-    getData()
-      .then(filterNulls)
-      .then(filterBigMovers)
-      .then(createChangeTable)
-      .then(createEmailString)
-      .then(sendEmail);
-  } else {
-    console.log('it\'s not Tuesday.');
-  };
-  return;
+module.exports = async () => {
+  const { data: orgs } = await getOrgs();
+  const { id } = orgs.find(({ attributes: { name } }) => name === 'BVAccel');
+  const { data: repos } = await getRepos(id);
+  const gpas = await getGpas(repos);
+  console.log(gpas);
+
+
+  // const data = await Promise.all(apiRequests);
+  // console.log(data);
 };
 
-doSomethign();
+
+
+// const sendEmail = emailString => {
+//   const mailOptions = {
+//     from: '"The Dean\'s Office" <tyler@bvaccel.com>', // sender address
+//     to: 'delivery@bvaccel.com',
+//     cc: 'tyler@bvaccel.com, annie@bvaccel.com',
+//     subject: `🎒 BVA Weekly Report Card™ for ${dates.pretty}`,
+//     html: emailString
+//   };
+
+//   transporter.sendMail(mailOptions, (error, info) => {
+//     if (error) {
+//       return console.log(error);
+//     }
+//     console.log('Message %s sent: %s', info.messageId, info.response);
+//   });
+// };
+
+// const doSomethign = function () {
+//   if (moment().day() === 2) {
+//     console.log('it\'s Tuesday!');
+//     getData()
+//       .then(filterNulls)
+//       .then(filterBigMovers)
+//       .then(createChangeTable)
+//       .then(createEmailString)
+//       .then(sendEmail);
+//   } else {
+//     console.log('it\'s not Tuesday.');
+//   };
+//   return;
+// };
+
+// doSomethign();

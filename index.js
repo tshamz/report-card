@@ -1,0 +1,1 @@
+const getGrades = require('./app')();
