@@ -12,7 +12,7 @@ const transporter = nodemailer.createTransport({
 const tunings = {
   threshold: 0.15,
   unit: 'week',
-  amount: 2
+  amount: 1
 };
 
 const requestHeaders = {
