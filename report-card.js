@@ -67,7 +67,7 @@ const getMetrics = async repos => {
     const [builds, snapshots] = items;
     return builds.reduce(({promises, repos}, {name, builds}, i) =>{
       const oldBuild = builds.find(build => dates.then.isSameOrAfter(build.attributes.finished_at));
-      const hasSnapshot = oldBuild.relationships.snapshot.data;
+      const hasSnapshot = (oldBuild) ? oldBuild.relationships.snapshot.data : false;
       const isNewSnapshot = (hasSnapshot) ? oldBuild.relationships.snapshot.data.id !== snapshots[i].id : false;
       if (!oldBuild || !hasSnapshot || !isNewSnapshot) {
         return {promises, repos: [...repos, {name, now: snapshots[i]}]}
@@ -157,5 +157,5 @@ module.exports = async () => {
   const scores = await getMetrics(repos);
   const sortedScores = sortScores(scores);
   const emailString = email(sortedScores);
-  // sendEmail(emailString);
+  sendEmail(emailString);
 };
